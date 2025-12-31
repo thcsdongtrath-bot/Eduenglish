@@ -1,0 +1,7 @@
+{
+  "name": " EduAI-English_test",
+  "description": "Hệ thống AI hỗ trợ giáo viên Tiếng Anh THCS soạn đề, chấm bài và phân tích kết quả theo chương trình Global Success 2018.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
