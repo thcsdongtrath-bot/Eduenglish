@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { TestData } from '../types';
 
 interface TeacherDashboardProps {
@@ -17,8 +17,24 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   onTogglePublish,
   onDeleteTest
 }) => {
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied'>('idle');
+
+  const handleCopyLink = () => {
+    if (!activeTest) return;
+    
+    // Đảm bảo đề thi ở trạng thái mở khi chia sẻ link
+    const testToShare = { ...activeTest, isPublished: true };
+    const encodedData = btoa(encodeURIComponent(JSON.stringify(testToShare)));
+    const shareUrl = `${window.location.origin}${window.location.pathname}?role=student&testData=${encodedData}`;
+    
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      setCopyStatus('copied');
+      setTimeout(() => setCopyStatus('idle'), 3000);
+    });
+  };
+
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-500 pb-20">
       <header className="flex flex-col sm:flex-row justify-between items-start gap-4">
         <div>
           <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">Quản lý lớp học 👨‍🏫</h2>
@@ -26,13 +42,13 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
         </div>
         <button 
           onClick={onCreateClick}
-          className="w-full sm:w-auto px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-100 transition-all flex items-center justify-center gap-2"
+          className="w-full sm:w-auto px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-100 transition-all flex items-center justify-center gap-2 active:scale-95"
         >
           <span>✨</span> Soạn đề mới
         </button>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
           <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-2xl mb-4">📚</div>
           <h3 className="text-lg font-bold text-slate-900">Đề đang soạn</h3>
@@ -71,11 +87,11 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
             </div>
           </div>
 
-          <div className="p-6 sm:p-8 flex flex-col gap-4">
-            <div className="flex flex-col sm:flex-row gap-4">
+          <div className="p-6 sm:p-8 flex flex-col gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <button 
                 onClick={onTogglePublish}
-                className={`flex-1 px-8 py-4 rounded-2xl font-black text-lg shadow-lg transition-all flex items-center justify-center gap-3 ${
+                className={`px-8 py-5 rounded-2xl font-black text-lg shadow-lg transition-all flex items-center justify-center gap-3 active:scale-95 ${
                   activeTest.isPublished 
                     ? 'bg-red-100 text-red-600 hover:bg-red-200' 
                     : 'bg-emerald-600 text-white hover:bg-emerald-700 hover:-translate-y-1'
@@ -89,17 +105,31 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
               </button>
               
               <button 
-                onClick={() => window.open('/?role=student', '_blank')}
-                className="px-8 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-200 transition-all flex items-center justify-center gap-3"
+                onClick={handleCopyLink}
+                className={`px-8 py-5 rounded-2xl font-black text-lg shadow-lg transition-all flex items-center justify-center gap-3 active:scale-95 ${
+                  copyStatus === 'copied' 
+                    ? 'bg-blue-100 text-blue-600' 
+                    : 'bg-blue-600 text-white hover:bg-blue-700 hover:-translate-y-1'
+                }`}
               >
-                <span className="text-2xl">👁️</span> Xem trước (HS)
+                {copyStatus === 'copied' ? (
+                  <><span className="text-2xl">✅</span> Đã chép link!</>
+                ) : (
+                  <><span className="text-2xl">🔗</span> Chép link gửi HS</>
+                )}
               </button>
             </div>
 
-            <div className="flex justify-center sm:justify-end mt-4">
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 border-t border-slate-100 pt-6">
+              <button 
+                onClick={() => window.open('/?role=student', '_blank')}
+                className="w-full sm:w-auto px-6 py-2 text-slate-500 font-bold hover:bg-slate-100 rounded-xl transition-all text-sm"
+              >
+                👁️ Xem trước giao diện HS
+              </button>
               <button 
                 onClick={onDeleteTest}
-                className="px-6 py-2 text-red-400 font-bold hover:bg-red-50 rounded-xl transition-all text-sm"
+                className="w-full sm:w-auto px-6 py-2 text-red-400 font-bold hover:bg-red-50 rounded-xl transition-all text-sm"
               >
                 🗑️ Xóa đề thi này
               </button>
@@ -107,28 +137,35 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
           </div>
 
           <div className="px-6 sm:px-8 pb-8">
-            <div className={`p-4 rounded-2xl flex items-center gap-3 border ${activeTest.isPublished ? 'bg-emerald-50 border-emerald-100 text-emerald-800' : 'bg-slate-50 border-slate-100 text-slate-600'}`}>
-              <span className="text-xl">{activeTest.isPublished ? '✅' : '🔒'}</span>
-              <p className="text-xs sm:text-sm font-medium leading-relaxed">
-                {activeTest.isPublished 
-                  ? "Học sinh chỉ cần chọn vai trò 'Học sinh', nhập tên và lớp là có thể làm bài ngay."
-                  : "Bài thi đang đóng. Học sinh sẽ không thể bắt đầu làm bài cho đến khi bạn 'Mở bài thi'."}
-              </p>
+            <div className={`p-5 rounded-2xl flex items-start gap-4 border ${activeTest.isPublished ? 'bg-emerald-50 border-emerald-100 text-emerald-800' : 'bg-slate-50 border-slate-100 text-slate-600'}`}>
+              <span className="text-2xl mt-1">{activeTest.isPublished ? '💡' : '🔒'}</span>
+              <div className="space-y-1">
+                <p className="text-sm font-bold">
+                  {activeTest.isPublished 
+                    ? "Hướng dẫn gửi đề cho học sinh:" 
+                    : "Bài thi đang đóng."}
+                </p>
+                <p className="text-xs font-medium leading-relaxed opacity-80">
+                  {activeTest.isPublished 
+                    ? "Bạn hãy bấm nút 'Chép link gửi HS' bên trên và gửi qua Zalo/Facebook lớp. Học sinh chỉ cần bấm vào link là sẽ thấy đề ngay trên điện thoại."
+                    : "Học sinh sẽ không thể bắt đầu làm bài cho đến khi bạn 'Mở bài thi'."}
+                </p>
+              </div>
             </div>
           </div>
         </div>
       )}
 
       {!activeTest && (
-        <div className="py-20 text-center bg-white rounded-3xl border-2 border-dashed border-slate-200">
-           <div className="text-6xl mb-6">📝</div>
-           <h3 className="text-xl font-bold text-slate-900">Bạn chưa có đề thi nào</h3>
-           <p className="text-slate-500 mt-2 max-w-sm mx-auto px-4">Hãy sử dụng AI để tạo ra một đề kiểm tra chất lượng cao theo chuẩn 2018 chỉ trong 30 giây!</p>
+        <div className="py-20 text-center bg-white rounded-[2.5rem] border-4 border-dashed border-slate-100">
+           <div className="text-7xl mb-6">✍️</div>
+           <h3 className="text-2xl font-black text-slate-900">Sẵn sàng soạn đề chưa?</h3>
+           <p className="text-slate-500 mt-2 max-w-sm mx-auto px-4 font-medium">Sử dụng trí tuệ nhân tạo để tạo đề kiểm tra bám sát chương trình Global Success 2018.</p>
            <button 
              onClick={onCreateClick}
-             className="mt-8 px-8 py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 shadow-xl transition-all"
+             className="mt-10 px-10 py-5 bg-blue-600 text-white rounded-[2rem] font-black text-lg hover:bg-blue-700 shadow-2xl shadow-blue-200 transition-all hover:-translate-y-1 active:scale-95"
            >
-             + Soạn đề ngay bây giờ
+             + Bắt đầu soạn đề ngay
            </button>
         </div>
       )}

@@ -22,6 +22,30 @@ const App: React.FC = () => {
     return saved ? JSON.parse(saved) : [];
   });
 
+  // Kiểm tra đề thi từ URL (Dành cho học sinh nhận link từ giáo viên)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const testDataParam = params.get('testData');
+    const roleParam = params.get('role');
+
+    if (testDataParam) {
+      try {
+        // Giải mã dữ liệu từ Base64
+        const decodedData = JSON.parse(decodeURIComponent(atob(testDataParam)));
+        setActiveTest(decodedData);
+        setUserRole(UserRole.STUDENT);
+        setCurrentView(View.STUDENT_PORTAL);
+        // Xóa param trên URL để link gọn hơn sau khi đã nhận
+        window.history.replaceState({}, document.title, window.location.pathname + (roleParam ? `?role=${roleParam}` : ''));
+      } catch (e) {
+        console.error("Lỗi giải mã đề thi:", e);
+      }
+    } else if (roleParam === 'student') {
+      setUserRole(UserRole.STUDENT);
+      setCurrentView(View.STUDENT_PORTAL);
+    }
+  }, []);
+
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'results' && e.newValue) {
@@ -37,7 +61,9 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('activeTest', JSON.stringify(activeTest));
+    if (activeTest) {
+      localStorage.setItem('activeTest', JSON.stringify(activeTest));
+    }
   }, [activeTest]);
 
   useEffect(() => {
@@ -79,6 +105,7 @@ const App: React.FC = () => {
 
   const handleLogout = () => {
     setUserRole(UserRole.NONE);
+    window.location.search = ''; // Xóa hết params khi logout
   };
 
   if (userRole === UserRole.NONE) {
@@ -94,7 +121,7 @@ const App: React.FC = () => {
         onLogout={handleLogout}
       />
       
-      <main className="flex-1 overflow-y-auto p-3 sm:p-6 md:p-8">
+      <main className="flex-1 overflow-y-auto p-3 sm:p-6 md:p-8 no-scrollbar">
         <div className="max-w-6xl mx-auto w-full">
           {userRole === UserRole.TEACHER && (
             <>
@@ -107,6 +134,7 @@ const App: React.FC = () => {
                   onDeleteTest={() => {
                     if(confirm("Bạn có chắc muốn xóa đề này?")) {
                       setActiveTest(null);
+                      localStorage.removeItem('activeTest');
                     }
                   }}
                 />
