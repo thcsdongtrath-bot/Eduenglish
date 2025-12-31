@@ -17,18 +17,28 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   onTogglePublish,
   onDeleteTest
 }) => {
-  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied'>('idle');
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'link' | 'code'>('idle');
+
+  const getEncodedData = () => {
+    if (!activeTest) return '';
+    const testToShare = { ...activeTest, isPublished: true };
+    return btoa(encodeURIComponent(JSON.stringify(testToShare)));
+  };
 
   const handleCopyLink = () => {
-    if (!activeTest) return;
-    
-    // Đảm bảo đề thi ở trạng thái mở khi chia sẻ link
-    const testToShare = { ...activeTest, isPublished: true };
-    const encodedData = btoa(encodeURIComponent(JSON.stringify(testToShare)));
+    const encodedData = getEncodedData();
     const shareUrl = `${window.location.origin}${window.location.pathname}?role=student&testData=${encodedData}`;
     
     navigator.clipboard.writeText(shareUrl).then(() => {
-      setCopyStatus('copied');
+      setCopyStatus('link');
+      setTimeout(() => setCopyStatus('idle'), 3000);
+    });
+  };
+
+  const handleCopyCode = () => {
+    const encodedData = getEncodedData();
+    navigator.clipboard.writeText(encodedData).then(() => {
+      setCopyStatus('code');
       setTimeout(() => setCopyStatus('idle'), 3000);
     });
   };
@@ -94,7 +104,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                 className={`px-8 py-5 rounded-2xl font-black text-lg shadow-lg transition-all flex items-center justify-center gap-3 active:scale-95 ${
                   activeTest.isPublished 
                     ? 'bg-red-100 text-red-600 hover:bg-red-200' 
-                    : 'bg-emerald-600 text-white hover:bg-emerald-700 hover:-translate-y-1'
+                    : 'bg-emerald-600 text-white hover:bg-emerald-700'
                 }`}
               >
                 {activeTest.isPublished ? (
@@ -107,17 +117,32 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
               <button 
                 onClick={handleCopyLink}
                 className={`px-8 py-5 rounded-2xl font-black text-lg shadow-lg transition-all flex items-center justify-center gap-3 active:scale-95 ${
-                  copyStatus === 'copied' 
+                  copyStatus === 'link' 
                     ? 'bg-blue-100 text-blue-600' 
-                    : 'bg-blue-600 text-white hover:bg-blue-700 hover:-translate-y-1'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
                 }`}
               >
-                {copyStatus === 'copied' ? (
+                {copyStatus === 'link' ? (
                   <><span className="text-2xl">✅</span> Đã chép link!</>
                 ) : (
                   <><span className="text-2xl">🔗</span> Chép link gửi HS</>
                 )}
               </button>
+            </div>
+
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+               <div className="flex justify-between items-center mb-2">
+                  <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Mã đề dự phòng (Nếu link Zalo bị lỗi)</span>
+                  <button 
+                    onClick={handleCopyCode}
+                    className="text-[10px] font-black text-blue-600 uppercase hover:underline"
+                  >
+                    {copyStatus === 'code' ? 'Đã chép mã!' : 'Chép mã đề'}
+                  </button>
+               </div>
+               <div className="bg-white p-3 rounded-xl border border-slate-200 font-mono text-[10px] text-slate-400 break-all line-clamp-2">
+                 {getEncodedData()}
+               </div>
             </div>
 
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4 border-t border-slate-100 pt-6">
@@ -133,24 +158,6 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
               >
                 🗑️ Xóa đề thi này
               </button>
-            </div>
-          </div>
-
-          <div className="px-6 sm:px-8 pb-8">
-            <div className={`p-5 rounded-2xl flex items-start gap-4 border ${activeTest.isPublished ? 'bg-emerald-50 border-emerald-100 text-emerald-800' : 'bg-slate-50 border-slate-100 text-slate-600'}`}>
-              <span className="text-2xl mt-1">{activeTest.isPublished ? '💡' : '🔒'}</span>
-              <div className="space-y-1">
-                <p className="text-sm font-bold">
-                  {activeTest.isPublished 
-                    ? "Hướng dẫn gửi đề cho học sinh:" 
-                    : "Bài thi đang đóng."}
-                </p>
-                <p className="text-xs font-medium leading-relaxed opacity-80">
-                  {activeTest.isPublished 
-                    ? "Bạn hãy bấm nút 'Chép link gửi HS' bên trên và gửi qua Zalo/Facebook lớp. Học sinh chỉ cần bấm vào link là sẽ thấy đề ngay trên điện thoại."
-                    : "Học sinh sẽ không thể bắt đầu làm bài cho đến khi bạn 'Mở bài thi'."}
-                </p>
-              </div>
             </div>
           </div>
         </div>
